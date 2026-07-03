@@ -24,7 +24,7 @@ Para garantizar la estabilidad de `AutoNameMC.js` y evitar bloqueos de permisos 
 ### Paso 2: Preparar tu carpeta de trabajo
 1. Genera y descarga tu lote de 27 skins en formato `.zip` desde la aplicación web oficial: [**SkinsArts Studio**](https://srbrop.github.io/SkinsArts-Studio/). Extrae las imágenes.
 2. Crea una **nueva carpeta local** en tu computadora con el nombre que tú quieras.
-3. Descarga el archivo `AutoNameMC.js` de este repositorio y mételo en esa nueva carpeta.
+3. Descarga el archivo (español) `AutoNameMC-ESP.js` o en inglés `Auto-NameMC.js` de este repositorio y mételo en esa nueva carpeta.
 4. Mueve las **27 imágenes de skins** al interior de esta misma carpeta (junto al archivo `.js`). Las imágenes ya deben venir con el formato correcto de SkinsArts Studio:
    - **Bloque C:** `c(9).png`, `c(8).png` ... hasta `c(1).png`
    - **Bloque B:** `b(9).png`, `b(8).png` ... hasta `b(1).png`
