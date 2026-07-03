@@ -76,9 +76,13 @@ Para evitar captchas de inicio de sesión, AutoNameMC.js se conectará de forma 
 Una vez que todo el entorno del navegador y tu carpeta estén preparados:
 1. Regresa a la ventana negra del CMD posicionada en tu carpeta de trabajo.
 
-2. Ejecuta el comando de inicio para despertar al bot:
+2. Ejecuta el comando de inicio para despertar al bot (Español):
   ```bash
-node AutoNameMC.js
+nodeAutoNameMC-ESP.js
+```
+bot (inglés):
+  ```bash
+node Auto-NameMC.js
 ```
 3. Suelta el ratón y el teclado por completo. El script tomará el control del navegador configurado y empezará a realizar la secuencia de forma automática.
 ### ⏱️ Comportamiento del proceso:
