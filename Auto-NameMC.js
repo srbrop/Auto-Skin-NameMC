@@ -1,128 +1,131 @@
-/**
- * Minecraft Skin Batch Uploader & NameMC Synchronizer
- * --------------------------------------------------
- * Repository: Open Source
- * License: MIT
- * Description: Automates sequential skin uploads to minecraft.net
- * and forces profile history synchronization on NameMC in reverse order.
- */
-
 const puppeteer = require('puppeteer');
 const path = require('path');
 
 (async () => {
-    // === 1. RESOURCE MATRIX GENERATION (SKINS) ===
-    // Configured for reverse order: c(9)->c(1), b(9)->b(1), a(9)->a(1)
     const letters = ['c', 'b', 'a'];
     const skins = [];
-    
     for (let letter of letters) {
         for (let i = 9; i >= 1; i--) {
-            // Target file name format: e.g., "c(9).png"
             skins.push(`${letter}(${i}).png`); 
         }
     }
 
-    console.log(`📋 [INFO] Matrix generated successfully: ${skins.length} items in queue.`);
+    console.log(`📋 List generated: ${skins.length} skins to upload.`);
 
     try {
-        // === 2. BROWSER CONNECTION VIA CDP (Chrome DevTools Protocol) ===
-        console.log(`🔌 [CONNECT] Attempting link with browser instance on port 9222...`);
+        console.log(`🔌 Connecting to your browser instance...`);
         const browser = await puppeteer.connect({ browserURL: 'http://127.0.0.1:9222' });
         const pages = await browser.pages();
 
-        // Map and discriminate target tabs
         let tabMinecraft = pages.find(p => p.url().includes('minecraft.net'));
         let tabNameMC = pages.find(p => p.url().includes('namemc.com'));
 
         if (!tabMinecraft || !tabNameMC) {
-            throw new Error('Target tabs not detected. Please verify active browser sessions.');
+            throw new Error('❌ Tabs not found! Ensure minecraft.net and namemc.com are open.');
         }
 
-        console.log(`✅ [SUCCESS] Automation channels validated. Starting main sequence.`);
+        console.log(`✅ Tabs detected. Starting bot with Anti-Crash Shield active!\n`);
 
-        // === 3. MAIN CORE LOOP ===
         for (let skin of skins) {
             const skinPath = path.join(__dirname, skin);
             let uploadSuccess = false;
             let attempts = 1;
 
-            // Resilience loop: Prevents sequence order loss if Mojang API errors out
             while (!uploadSuccess) {
-                console.log(`\n👕 [PROCESS] [${skin}] - Transmission attempt #${attempts}`);
+                console.log(`👕 [Attempt #${attempts}] Processing: ${skin}...`);
 
-                // Focus active work tab to prevent rendering desyncs
-                await tabMinecraft.bringToFront();
-                
-                // Target the native Minecraft DOM upload button ID
-                const btnSelector = '#choose-file';
-                await tabMinecraft.waitForSelector(btnSelector, { visible: true });
-                
-                // Asynchronously intercept native OS File Chooser
-                const [fileChooser] = await Promise.all([
-                    tabMinecraft.waitForFileChooser(),
-                    tabMinecraft.click(btnSelector)
-                ]);
-                
-                // Inject local file path into the binary input
-                await fileChooser.accept([skinPath]);
-                console.log(`   └─ 💾 Local payload loaded into DOM.`);
-                
-                // Technical delay for 3D skin render preview processing
-                await new Promise(r => setTimeout(r, 2500));
-                
-                // Trigger submit event (Click Upload/Save button)
-                await tabMinecraft.evaluate(() => {
-                    const buttons = Array.from(document.querySelectorAll('button'));
-                    const uploadBtn = buttons.find(b => b.innerText && (b.innerText.toLowerCase().includes('cargar') || b.innerText.toLowerCase().includes('guardar') || b.innerText.toLowerCase().includes('upload')));
-                    if (uploadBtn) uploadBtn.click();
-                });
-
-                console.log(`   └─ ⏳ Waiting for Mojang database write confirmation...`);
-                await new Promise(r => setTimeout(r, 4000)); 
-
-                // === 4. ANTI-RATE LIMITING INSPECTION SYSTEM (SHIELD) ===
-                const hasError = await tabMinecraft.evaluate(() => {
-                    // Analytical detection of error components/spam block banners
-                    const errorBanner = document.querySelector('.notification-banner, .alert-danger, .error-message, [class*="error"], [class*="alert"]');
-                    if (errorBanner && errorBanner.offsetHeight > 0) return true;
-
-                    // Syntactic analysis of plain body text for common network exceptions
-                    const pageText = document.body.innerText.toLowerCase();
-                    if (pageText.includes('error al subir') || pageText.includes('error guardando') || pageText.includes('inténtalo de nuevo') || pageText.includes('too many requests')) {
-                        return true; 
-                    }
-                    return false;
-                });
-
-                if (hasError) {
-                    console.log(`   ⚠️ [REJECTED] Server saturated or request denied for ${skin}.`);
-                    console.log(`   ⏳ [PENALTY] Reloading environment and applying 15s cooldown before retry.`);
+                try {
+                    await tabMinecraft.bringToFront();
                     
-                    // Hard-reset active tab to clear corrupted DOM states
-                    await tabMinecraft.reload({ waitUntil: 'networkidle2' }); 
+                    if (!tabMinecraft.url().includes('editskin')) {
+                        console.log(`🚨 [ALERT] Redirect detected. Pausing 30s for session verification...`);
+                        await new Promise(r => setTimeout(r, 30000));
+                        await tabMinecraft.goto('https://www.minecraft.net/msaprofile/mygames/editskin', { waitUntil: 'networkidle2', timeout: 60000 });
+                        continue;
+                    }
+
+                    const btnSelectorFile = '#choose-file';
+                    await tabMinecraft.waitForSelector(btnSelectorFile, { visible: true, timeout: 15000 });
+                    
+                    const [fileChooser] = await Promise.all([
+                        tabMinecraft.waitForFileChooser({ timeout: 15000 }),
+                        tabMinecraft.click(btnSelectorFile)
+                    ]);
+                    await fileChooser.accept([skinPath]);
+                    
+                    await new Promise(r => setTimeout(r, 2500));
+                    
+                    const networkPromise = tabMinecraft.waitForResponse(
+                        res => res.url().includes('/profile/skins') && res.request().method() !== 'OPTIONS',
+                        { timeout: 12000 }
+                    ).catch(() => null); 
+
+                    console.log(`   └─ Sending request to Mojang servers...`);
+                    const btnUpload = 'button[data-aem-contentname="Upload Skin"]';
+                    await tabMinecraft.waitForSelector(btnUpload, { visible: true, timeout: 15000 });
+                    await tabMinecraft.click(btnUpload);
+
+                    const apiResponse = await networkPromise;
+
+                    if (apiResponse && apiResponse.ok()) {
+                        console.log(`   ✅ [CONFIRMED] Server accepted the skin perfectly.`);
+                        uploadSuccess = true; 
+                    } else {
+                        if (!apiResponse) {
+                            console.log(`   ⚠️ [SILENT FAILURE] Request dropped or page froze.`);
+                        } else {
+                            const statusCode = apiResponse.status();
+                            let errorDetails = 'Could not extract details.';
+                            try { errorDetails = await apiResponse.text(); } catch (e) {}
+                            
+                            console.log(`   ⚠️ [REJECTED] Server returned code: ${statusCode}`);
+                            console.log(`   🔍 [ROOT CAUSE]: ${errorDetails}`);
+                        }
+                        
+                        console.log(`   ⏳ [PENALTY] Reloading environment and waiting 15s to retry...`);
+                        await tabMinecraft.reload({ waitUntil: 'networkidle2', timeout: 60000 }); 
+                        await new Promise(r => setTimeout(r, 15000));
+                        attempts++;
+                    }
+
+                } catch (innerError) {
+                    console.log(`   🚨 [BROWSER ERROR] Page timed out or disconnected.`);
+                    console.log(`   🔍 Error details: ${innerError.message}`);
+                    console.log(`   ⏳ [RECOVERY] Forcing reload and retrying in 15s...`);
+                    
+                    try { 
+                        await tabMinecraft.reload({ waitUntil: 'networkidle2', timeout: 60000 }); 
+                    } catch (e) {
+                        console.log(`   ⚠️ Could not reload, will retry in the next cycle.`);
+                    }
+                    
                     await new Promise(r => setTimeout(r, 15000));
                     attempts++;
-                } else {
-                    console.log(`   ✅ [ACCEPTED] Skin successfully registered globally.`);
-                    uploadSuccess = true; // Breaks retry loop
                 }
             }
 
-            // === 5. NAMEMC HISTORY SYNCHRONIZATION (F5) ===
-            console.log(`🔄 [SYNC] Forcing refresh (F5) on NameMC...`);
-            await tabNameMC.bringToFront();
-            await tabNameMC.reload({ waitUntil: 'networkidle2' });
-            console.log(`✅ [SYNCED] History updated on NameMC.`);
+            try {
+                console.log(`🔄 Switching to NameMC for the FIRST F5...`);
+                await tabNameMC.bringToFront();
+                await tabNameMC.reload({ waitUntil: 'networkidle2', timeout: 60000 });
+                
+                console.log(`⏳ Waiting 8 seconds for data to propagate...`);
+                await new Promise(r => setTimeout(r, 8000));
 
-            // === 6. REGULATORY BEHAVIOR COOL DOWN ===
-            console.log(`⏳ [COOL DOWN] Waiting 15 seconds to mitigate bot behavior signatures...`);
-            await new Promise(r => setTimeout(r, 15000));
+                console.log(`🔄 Executing SECOND security F5 on NameMC...`);
+                await tabNameMC.reload({ waitUntil: 'networkidle2', timeout: 60000 });
+                console.log(`✅ History secured.`);
+            } catch (nameMcError) {
+                console.log(`   ⚠️ [WARNING] Delay occurred while reloading NameMC, but history should be safe.`);
+            }
+
+            console.log(`⏳ Waiting remaining 7 seconds of cooldown...\n`);
+            await new Promise(r => setTimeout(r, 7000));
         }
 
-        console.log(`\n🎉 [FINISH] All 27 skins processed in flawless reverse order!`);
+        console.log(`🎉 ALL DONE! 27 skins successfully uploaded and secured in your history.`);
 
     } catch (error) {
-        console.error('❌ [FATAL ERROR] Critical exception in execution thread:', error);
+        console.error('\n❌ A catastrophic error occurred (Outside the loop):', error);
     }
 })();
