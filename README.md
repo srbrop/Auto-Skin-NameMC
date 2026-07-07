@@ -72,19 +72,39 @@ Para evitar captchas de inicio de sesión, AutoNameMC.js se conectará de forma 
 4. En la ventana del navegador que se acaba de abrir, prepara las siguientes dos pestañas:
    * Pestaña 1: Entra a [**Minecraft.net**](https://www.minecraft.net/msaprofile/mygames/editskin), , inicia tu sesión con tu cuenta de Microsoft y posiciónate en la pantalla de "Cambiar aspecto" (donde aparece el botón verde para subir archivos).
    * Pestaña 2: Abre tu perfil público de NameMC (e.g., https://es.namemc.com/profile/TuUsuario).
+---
 ### ⚡ Ejecución del Script
 Una vez que todo el entorno del navegador y tu carpeta estén preparados:
 1. Regresa a la ventana negra del CMD posicionada en tu carpeta de trabajo.
 
-2. Ejecuta el comando de inicio para despertar al bot (Español):
+2. Ejecuta el comando de inicio para despertar al bot
+
+* Bot (Español):
   ```bash
-nodeAutoNameMC-ESP.js
-```
-bot (inglés):
+   nodeAutoNameMC-ESP.js
+
+* bot (inglés):
   ```bash
-node Auto-NameMC.js
-```
+   node Auto-NameMC.js
+
+3. Suelta el ratón y el teclado por completo. El script tomará el control del navegador configurado y empezará a realizar la secuencia de forma automática
+---
+### ⚡ Ejecución del Script (Versión Ultimate)
+Esta es la versión si quieres que en tu carpeta se guarde una captura de pantalla de tu mural para que lo puedas compartir. Ten en cuenta que al finalizar el procesamiento de tus 27 skins, el bot abrirá automáticamente una instancia limpia para generar una captura de pantalla en alta resolución de tu nuevo mural.
+1. Regresa a la ventana del CMD posicionada en tu carpeta de trabajo.
+
+2. Ejecuta el comando de inicio para activar el bot según el archivo que hayas descargado:
+
+* Bot (Español):
+  ```bash
+   node AutoNameMC-Ultimate-Esp.js
+
+* bot (inglés):
+  ```bash
+   node AutoNameMC-Ultimate.js
+
 3. Suelta el ratón y el teclado por completo. El script tomará el control del navegador configurado y empezará a realizar la secuencia de forma automática.
+---
 ### ⏱️ Comportamiento del proceso:
    * El script tarda un aproximado de 17 segundos netos por skin (Carga ➡️ Clic ➡️ Escritura en servidores ➡️ F5 automático en NameMC ➡️ 15 segundos de enfriamiento).
 
